@@ -26,9 +26,12 @@ PBL_APP_INFO(MY_UUID,
              RESOURCE_ID_IMAGE_MENU_ICON,
              APP_INFO_STANDARD_APP);
 
+//Config this!
+#define NUM_NOTES 2
+
+//Constants
 #define NUM_MENU_SECTIONS 1
-#define NUM_MENU_ICONS 3
-#define NUM_FIRST_MENU_ITEMS 3
+#define NUM_FIRST_MENU_ITEMS NUM_NOTES
 
 
 Window window;
@@ -36,11 +39,6 @@ Window window;
 // This is a menu layer
 // You have more control than with a simple menu layer
 MenuLayer menu_layer;
-
-// Menu items can optionally have an icon drawn with them
-HeapBitmap menu_icons[NUM_MENU_ICONS];
-
-int current_icon = 0;
 
 // You can draw arbitrary things in a menu item such as a background
 HeapBitmap menu_background;
@@ -87,43 +85,43 @@ void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t 
 }
 
 
+uint32_t row_to_resource(int row) {
+	switch (row) {
+		case 0:    return RESOURCE_ID_NOTE1;
+		case 1:    return RESOURCE_ID_NOTE2;
+/*		case 2:    return RESOURCE_ID_NOTE3;
+		case 3:    return RESOURCE_ID_NOTE4;
+		case 4:    return RESOURCE_ID_NOTE5;
+		case 5:    return RESOURCE_ID_NOTE6;
+		case 6:    return RESOURCE_ID_NOTE7;
+		case 7:    return RESOURCE_ID_NOTE8;
+		case 8:    return RESOURCE_ID_NOTE9;*/
+	}
+	return RESOURCE_ID_NOTE1;
+}
+	
+	
 // This is the menu item draw callback where you specify what each item should look like
 void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
 	// Determine which section we're going to draw in
 	switch (cell_index->section) {
 	    case 0:
-            // Use the row to specify which item we'll draw
-            switch (cell_index->row) {
-                case 0:
-                    // This is a basic menu item with a title and subtitle
-                    menu_cell_basic_draw(ctx, 
-										 cell_layer, 
-										 "Basic Item", 
-										 "With a subtitle", 
-										 NULL);
-                    break;
-
-                case 1:
-                    // This is a basic menu icon with a cycling icon
-                    menu_cell_basic_draw(ctx, 
-										 cell_layer, 
-										 "Icon Item", 
-										 "Select to cycle", 
-										 &menu_icons[current_icon].bmp);
-                    break;
-
-                case 2:
-                    // Here we use the graphics context to draw something different
-                    // In this case, we show a strip of a watchface's background
-                    graphics_draw_bitmap_in_rect(ctx, 
-												 &menu_background.bmp,
-												 (GRect){ 
-													 .origin = GPointZero, 
-													 .size = cell_layer->frame.size
-												 }
-												);
-                    break;
-            }
+			if (cell_index->row < NUM_NOTES) {
+				uint32_t resource_name = row_to_resource(cell_index->row);
+				#define TITLE_BUFFER_LEN 10
+				char note_title[TITLE_BUFFER_LEN];		
+				char note_preview[TITLE_BUFFER_LEN];		
+				sprintf(note_title, "Note %d", cell_index->row);
+				resource_load_byte_range(resource_get_handle(resource_name),
+										 0,
+										 (uint8_t*)note_preview,  // Pointer to note1 char array
+										 TITLE_BUFFER_LEN);
+				menu_cell_basic_draw(ctx, 
+									 cell_layer, 
+									 note_title, 
+									 (char*)note_preview, 
+									 NULL);
+		    }
             break;
 	}
 }
@@ -131,12 +129,11 @@ void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *c
 
 // Here we capture when a user selects a menu item
 void menu_select_callback(MenuLayer *me, MenuIndex *cell_index, void *data) {
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "%s %d", "Item selected", cell_index->row);
 	// Use the row to specify which item will receive the select action
 	switch (cell_index->row) {
         // This is the menu item with the cycling icon
         case 1:
-            // Cycle the icon
-            current_icon = (current_icon + 1) % NUM_MENU_ICONS;
             // After changing the icon, mark the layer to have it updated
             layer_mark_dirty(&me->scroll_layer.layer);
             break;
@@ -147,21 +144,6 @@ void menu_select_callback(MenuLayer *me, MenuIndex *cell_index, void *data) {
 
 // This initializes the menu upon window load
 void window_load(Window *me) {
-	// Here we load the bitmap assets
-	// resource_init_current_app must be called before all asset loading
-	// in order to recognize the resource tags
-	int num_menu_icons = 0;
-	heap_bitmap_init(&menu_icons[num_menu_icons++], 
-					 RESOURCE_ID_IMAGE_MENU_ICON_BIG_WATCH);
-	heap_bitmap_init(&menu_icons[num_menu_icons++], 
-					 RESOURCE_ID_IMAGE_MENU_ICON_SECTOR_WATCH);
-	heap_bitmap_init(&menu_icons[num_menu_icons++], 
-					 RESOURCE_ID_IMAGE_MENU_ICON_BINARY_WATCH);
-
-	// And also load the background
-	heap_bitmap_init(&menu_background, 
-					 RESOURCE_ID_IMAGE_BACKGROUND_BRAINS);
-
 	// Now we prepare to initialize the menu layer
 	// We need the bounds to specify the menu layer's viewport size
 	// In this case, it'll be the same as the window's
@@ -195,11 +177,6 @@ void window_load(Window *me) {
 
 
 void window_unload(Window *me) {
-	// Cleanup the menu icons
-	for (int i = 0; i < NUM_MENU_ICONS; i++) {
-        heap_bitmap_deinit(&menu_icons[i]);
-	}
-
 	// And cleanup the background
 	heap_bitmap_deinit(&menu_background);
 }
@@ -226,6 +203,7 @@ void handle_init(AppContextRef ctx) {
 
 
 void pbl_main(void *params) {
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "%s", "Hola mundo");
 	PebbleAppHandlers handlers = {
         .init_handler = &handle_init
 	};

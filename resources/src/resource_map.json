@@ -1,9 +1,14 @@
 {
     "media": [
         {
+            "defName": "NOTE2",
+            "type": "raw",
+            "file": "data/periodictabledump.csv"
+        },
+        {
             "defName": "NOTE1",
             "type": "raw",
-            "file": "data/minutas 09.10.13.txt"
+            "file": "data/NOTE1.txt"
         },
         {
             "defName": "IMAGE_MENU_ICON",
