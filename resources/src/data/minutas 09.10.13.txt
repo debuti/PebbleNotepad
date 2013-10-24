@@ -1,0 +1,45 @@
+Buenas tardes.
+
+Listo a continuación los puntos considerados en la reunión de hoy 9 de Octubre de 2013.
+
+Etiquetadora
+ - Hablar con la CAM para ver cuales son las impresoras que usan ellos.
+ - Las etiquetas de registro deben llevar una fuente mas grande
+
+Listados
+ - Filtro tanto por fecha como por hora
+ - Listados agrupados por unidades (separados en hojas distintas) y ordenados por hora
+ - Ha de incluirse un numero de orden para poder contar el numero de registros de cada codigo
+ - Debe añadirse el orden y quitarse el ejercicio, resultando este listado de columnas (ordenadas): 
+     orden, fecha, #registro, interesado, origen, destino, estado
+ - Las unidades de destino deben de llevar necesariamente la dirección, para que cuando se saquen los listados aparezca
+ - Estudiar si se puede poner el listado en vertical
+ - Adecuar la anchura del campo fecha/hora para que se lea facilmente
+ 
+Busqueda
+ - Busqueda con comodines
+ - Filtro por tipo de transporte
+ - Filtro por provincia de origen, tanto de interesado como de organo de origen
+ - Filtro por #expediente
+
+Edición/Resumen de asiento
+ - Visualizacion del usuario que dió el alta en la pantalla principal (sin pestañas)
+ - Explicación del concepto de oficina interna
+
+Gestión de usuarios
+ - Usuario que pueda ver todas las oficinas, pero en modo lectura
+
+Alta de registro
+ - Quitar la negrita de los campos que no sean obligatorios
+ - Pensar como introducir los organismos que no se encuentran en DIR3
+ - La configuración de copia de registro debe mantenerse al cerrar y volver a abrir la sesion
+ - Cod. asunto debe ser un campo de tipo busqueda, no un desplegable
+ - Negrita en el cod. asunto
+
+
+Según mis notas esto es todo lo que hemos tratado, por favor, informarme si falta o algo esta incorrecto.
+Por otro lado, me he dado cuenta que no hemos considerado el importante asunto de los borrados o las modificaciones de asientos, cosa que queda para la siguiente reunion. Además, aunque Marian ya se pondrá en contacto con vosotros para tratarlo, seguramente tengais que haceros cargo de la gestión de oficinas y relaciones (¡pero no de unidades!) del dir3. Tambien lo consideramos en la siguiente reunión.
+
+Creo que no olvido nada. 
+
+Un saludo :)
