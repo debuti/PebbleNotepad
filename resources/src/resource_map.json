@@ -1,12 +1,12 @@
 {
     "media": [
         {
-            "defName": "NOTE2",
+            "defName": "NOTE1",
             "type": "raw",
             "file": "data/periodictabledump.csv"
         },
         {
-            "defName": "NOTE1",
+            "defName": "NOTE0",
             "type": "raw",
             "file": "data/NOTE1.txt"
         },
@@ -14,26 +14,6 @@
             "defName": "IMAGE_MENU_ICON",
             "type": "png",
             "file": "images/crayon_mine.png"
-        },
-        {
-            "defName": "IMAGE_MENU_ICON_SECTOR_WATCH",
-            "type": "png",
-            "file": "images/menu_icon_sector_watch.png"
-        },
-        {
-            "defName": "IMAGE_MENU_ICON_BINARY_WATCH",
-            "type": "png",
-            "file": "images/menu_icon_binary_watch.png"
-        },
-        {
-            "defName": "IMAGE_MENU_ICON_BIG_WATCH",
-            "type": "png",
-            "file": "images/menu_icon_big_watch.png"
-        },
-        {
-            "defName": "IMAGE_BACKGROUND_BRAINS",
-            "type": "png",
-            "file": "images/brains_watch_background.png"
         }
     ],
     "friendlyVersion": "VERSION",
