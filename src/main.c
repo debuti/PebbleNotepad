@@ -40,7 +40,6 @@ PBL_APP_INFO(MY_UUID,
 // Remember to add the resources and change NUM_NOTES 
 #define NUM_NOTES 2
 #define FONT_TYPE MEDIUM
-const int vert_scroll_text_padding = 4;
 #define PIXELS_PER_CLICK 130;
 
 //More constants
@@ -65,6 +64,142 @@ ScrollLayer scroll_layer;
 TextLayer text_layer;
 
 
+///////////////////////////NOTE WINDOW///////////////////////////
+void up_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
+	GPoint 	offset = scroll_layer_get_content_offset(&scroll_layer);
+	offset.y = offset.y + PIXELS_PER_CLICK;
+	scroll_layer_set_content_offset	(&scroll_layer,
+									 offset,
+									 true);
+}
+
+
+void down_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
+	GPoint 	offset = scroll_layer_get_content_offset(&scroll_layer);
+	offset.y = offset.y - PIXELS_PER_CLICK;
+	scroll_layer_set_content_offset	(&scroll_layer,
+									 offset,
+									 true);
+}
+
+
+void select_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
+	//Init or pause down scrolling
+
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###select_single_click_handler: Entering###\n");
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###select_single_click_handler: Exiting###\n");
+
+}
+
+
+void config_provider(ClickConfig **config, Window *winder)
+{
+    config[BUTTON_ID_UP]->click.handler = (ClickHandler)up_single_click_handler;
+    config[BUTTON_ID_DOWN]->click.handler = (ClickHandler)down_single_click_handler;
+    config[BUTTON_ID_SELECT]->click.handler = (ClickHandler)select_single_click_handler;
+    //config[BUTTON_ID_BACK]->click.handler = (ClickHandler)back_single_click_handler;
+	//TODO: Multiclick select sets a plain clock, to exit that screen Up+Down
+	//TODO: Longpress on up goes to the top, down to the bottom
+	
+    /*config[BUTTON_ID_UP]->multi_click.handler = (ClickHandler)up_multi_click_handler;
+    config[BUTTON_ID_DOWN]->multi_click.handler = (ClickHandler)down_multi_click_handler;
+    config[BUTTON_ID_SELECT]->multi_click.handler = (ClickHandler)select_multi_click_handler;
+    config[BUTTON_ID_BACK]->multi_click.handler = (ClickHandler)back_multi_click_handler;
+    config[BUTTON_ID_UP]->long_click.handler = (ClickHandler)up_long_click_handler;
+    config[BUTTON_ID_DOWN]->long_click.handler = (ClickHandler)down_long_click_handler;
+    config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler)select_long_click_handler;
+    config[BUTTON_ID_BACK]->long_click.handler = (ClickHandler)back_long_click_handler;*/
+}
+
+
+void note_window_load(Window *me) { 
+	
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###note_window_load: Entering###\n");
+	
+	
+	const GRect max_text_bounds = GRect(0, 0, 144, 2000); // 2000 lines of text
+	
+	// Initialize the scroll layer
+	scroll_layer_init(&scroll_layer, 
+					  me->layer.bounds); // Window is 144x168
+	
+	// This binds the scroll layer to the window so that up and down map to scrolling
+	// You may use scroll_layer_set_callbacks to add or override interactivity
+	//scroll_layer_set_click_config_onto_window(&scroll_layer, 
+	//										  me);
+	
+	// Set the initial max size
+	scroll_layer_set_content_size(&scroll_layer, 
+								  max_text_bounds.size);
+	
+	// Initialize the text layer and load text
+	text_layer_init(&text_layer, 
+					max_text_bounds);
+	/*
+	#define TEXT_BUFFER_LEN 20
+	char note_view[TEXT_BUFFER_LEN];
+	char read_buffer[TEXT_BUFFER_LEN];	
+	resource_load_byte_range(resource_get_handle(note_selected),
+							 0,
+							 (uint8_t*)read_buffer, // Pointer to note char array
+							 TEXT_BUFFER_LEN);
+	mini_snprintf(note_view, 
+				  TEXT_BUFFER_LEN, 
+				  "%s", 
+				  read_buffer);
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###note_window_load: Loaded preview %s###\n", 
+			note_view);
+	*/	
+	//Transform 0x0d 0x0a to 0x20 0x\n
+	//text_transform(note_view);
+	
+	//Set text to the layer
+	text_layer_set_text(&text_layer, 
+						"Julandronooo\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\n");
+						//note_view);
+		/*
+	// Change the font to a nice readable one
+	text_layer_set_font(&text_layer, 
+						fonts_get_system_font(FONT_TYPE));
+
+	// Trim text layer and scroll content to fit text box
+	GSize max_size = text_layer_get_max_used_size(app_get_current_graphics_context(), 
+												  &text_layer);
+	text_layer_set_size(&text_layer, 
+						max_size);
+						
+    const int vert_scroll_text_padding = 4;
+	scroll_layer_set_content_size(&scroll_layer, 
+								  GSize(144, max_size.h + vert_scroll_text_padding));
+	*/
+	// Add the layers for display
+	scroll_layer_add_child(&scroll_layer, 
+						   &text_layer.layer);
+	
+	layer_add_child(&me->layer, //Root layer of the window
+					&scroll_layer.layer);
+	
+    window_set_click_config_provider(&note_window, 
+									 (ClickConfigProvider)config_provider);
+	
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###note_window_load: Exiting###\n");
+}
+
+
+void note_window_unload(Window *me) {
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###note_window_unload: Entering###\n");
+	
+	
+
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###note_window_unload: Exiting###\n");
+}
 
 ///////////////////////////MAIN WINDOW///////////////////////////
 // This function links numbers with resources
@@ -210,18 +345,34 @@ void menu_select_callback(MenuLayer *me, MenuIndex *cell_index, void *data) {
 			"\n###menu_select_callback: Item selected section %d, row %d###\n", 
 			cell_index->section, 
 			cell_index->row);
+	
 	note_selected = row_to_resource(cell_index->row);
 		
+	// Initialize main window but dont push it
+	window_init(&note_window, 
+				"Note");
+	// Setup window handlers
+	window_set_window_handlers(&note_window, 
+							   (WindowHandlers){
+									.load = note_window_load,
+								    .unload = note_window_unload,
+                               }
+							  );
+	//TODO: Es posible que haya que usar los handlers de appear y dissapear
+	//Push!
 	window_stack_push(&note_window, 
 					  true /* Animated */);
-	// Mark the layer to have it updated
-	//layer_mark_dirty(&me->scroll_layer.layer);
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###menu_select_callback: Exiting###\n");
+
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###menu_select_callback: Exiting###\n");
 }
 
 
 // This initializes the menu upon main_window load
 void main_window_load(Window *me) {
+	
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###main_window_load: Entering###\n");
 	// Now we prepare to initialize the menu layer
 	// We need the bounds to specify the menu layer's viewport size
 	// In this case, it'll be the same as the window's
@@ -251,159 +402,16 @@ void main_window_load(Window *me) {
 	// Add it to the main_window for display
 	layer_add_child(&me->layer, 
 					menu_layer_get_layer(&menu_layer));
+
+	window_deinit(&note_window);
+			
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###main_window_load: Exiting###\n");
 }
 
 
 void main_window_unload(Window *me) {
 }
-
-
-
-///////////////////////////NOTE WINDOW///////////////////////////
-void up_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
-	GPoint 	offset = scroll_layer_get_content_offset(&scroll_layer);
-	offset.y = offset.y + PIXELS_PER_CLICK;
-	scroll_layer_set_content_offset	(&scroll_layer,
-									 offset,
-									 true);
-}
-
-
-void down_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
-	GPoint 	offset = scroll_layer_get_content_offset(&scroll_layer);
-	offset.y = offset.y - PIXELS_PER_CLICK;
-	scroll_layer_set_content_offset	(&scroll_layer,
-									 offset,
-									 true);
-}
-
-
-void select_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
-	//Init or pause down scrolling
-	window_stack_push(&main_window, 
-					  true /* Animated */);
-
-}
-
-
-/*void back_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
-	window_stack_push(&main_window, 
-					  true);
-}*/
-
-
-void config_provider(ClickConfig **config, Window *winder)
-{
-    config[BUTTON_ID_UP]->click.handler = (ClickHandler)up_single_click_handler;
-    config[BUTTON_ID_DOWN]->click.handler = (ClickHandler)down_single_click_handler;
-    config[BUTTON_ID_SELECT]->click.handler = (ClickHandler)select_single_click_handler;
-    //config[BUTTON_ID_BACK]->click.handler = (ClickHandler)back_single_click_handler;
-	//TODO: Multiclick sets a plain clock, to exit that screen Up+Down
-	//TODO: Longpress on up goes to the top, down to the bottom
-	
-    /*config[BUTTON_ID_UP]->multi_click.handler = (ClickHandler)up_multi_click_handler;
-    config[BUTTON_ID_DOWN]->multi_click.handler = (ClickHandler)down_multi_click_handler;
-    config[BUTTON_ID_SELECT]->multi_click.handler = (ClickHandler)select_multi_click_handler;
-    config[BUTTON_ID_BACK]->multi_click.handler = (ClickHandler)back_multi_click_handler;
-    config[BUTTON_ID_UP]->long_click.handler = (ClickHandler)up_long_click_handler;
-    config[BUTTON_ID_DOWN]->long_click.handler = (ClickHandler)down_long_click_handler;
-    config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler)select_long_click_handler;
-    config[BUTTON_ID_BACK]->long_click.handler = (ClickHandler)back_long_click_handler;*/
-}
-
-
-void note_window_load(Window *me) { 
-	
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_load: Entering###\n");
-	
-	
-	const GRect max_text_bounds = GRect(0, 0, 144, 2000); // 2000 lines of text
-	
-	// Initialize the scroll layer
-	scroll_layer_init(&scroll_layer, 
-					  me->layer.bounds); // Screen is 144x168
-	
-	// This binds the scroll layer to the window so that up and down map to scrolling
-	// You may use scroll_layer_set_callbacks to add or override interactivity
-	//scroll_layer_set_click_config_onto_window(&scroll_layer, 
-	//										  me);
-	
-	// Set the initial max size
-	scroll_layer_set_content_size(&scroll_layer, 
-								  max_text_bounds.size);
-	
-	// Initialize the text layer and load text
-	text_layer_init(&text_layer, 
-					max_text_bounds);
-	
-	//#define TEXT_BUFFER_LEN 500
-	//char note_view[TEXT_BUFFER_LEN];	
-	//resource_load_byte_range(resource_get_handle(note_selected),
-	//						 0,
-	//						 (uint8_t*)note_view, // Pointer to note char array
-	//						 TITLE_BUFFER_LEN);
-	//text_layer_set_text(&text_layer, 
-	//					note_view);
-	text_layer_set_text(&text_layer, "Hola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\nHola caracola\n");
-	
-	// Change the font to a nice readable one
-	text_layer_set_font(&text_layer, 
-						fonts_get_system_font(FONT_TYPE));
-	
-	// Trim text layer and scroll content to fit text box
-	GSize max_size = text_layer_get_max_used_size(app_get_current_graphics_context(), 
-												  &text_layer);
-	text_layer_set_size(&text_layer, 
-						max_size);
-	scroll_layer_set_content_size(&scroll_layer, 
-								  GSize(144, max_size.h + vert_scroll_text_padding));
-	
-	// Add the layers for display
-	scroll_layer_add_child(&scroll_layer, 
-						   &text_layer.layer);
-	
-	layer_add_child(&me->layer, //Root layer of the window
-					&scroll_layer.layer);
-	
-    window_set_click_config_provider(&note_window, 
-									 (ClickConfigProvider)config_provider);
-	
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_load: Exiting###\n");
-}
-
-
-/*void note_window_unload(Window *me) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_unload: Entering###\n");
-	
-	//text_layer_deinit(&text_layer);	
-
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_unload: Exiting###\n");
-}
-
-
-void note_window_appear(Window *me) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_appear: Entering###\n");
-	
-    layer_mark_dirty(&me->layer);
-	
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_appear: Exiting###\n");
-}
-
-
-void note_window_disappear(Window *me) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_disappear: Entering###\n");
-	
-
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_disappear: Exiting###\n");
-}*/
 
 
 
@@ -425,25 +433,13 @@ void handle_init(AppContextRef ctx) {
                                }
 							  );
 	
-	// Initialize main window but dont push it
-	window_init(&note_window, 
-				"Note");
-	// Setup window handlers
-	window_set_window_handlers(&note_window, 
-							   (WindowHandlers){
-									.load = note_window_load,
-								   // .unload = note_window_unload,
-									//.appear = note_window_appear,
-								    //.disappear = note_window_disappear,
-                               }
-							  );
-	//TODO: Es posible que haya que usar los handlers de appear y dissapear
-  
+	
 }
 
 
 void pbl_main(void *params) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###Initializing notepad###\n");
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###Initializing notepad###\n");
 	PebbleAppHandlers handlers = {
         .init_handler = &handle_init
 	};
