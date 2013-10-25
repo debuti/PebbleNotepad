@@ -38,9 +38,9 @@ PBL_APP_INFO(MY_UUID,
 	
 //Config this to fit your needs. 
 // Remember to add the resources and change NUM_NOTES 
-#define NUM_NOTES 2
-#define FONT_TYPE MEDIUM
-#define PIXELS_PER_CLICK 130;
+#define NUM_NOTES 3
+#define FONT_TYPE SMALL
+#define PIXELS_PER_CLICK 120;
 
 //More constants
 #define NUM_MENU_SECTIONS 1
@@ -49,6 +49,7 @@ PBL_APP_INFO(MY_UUID,
 	
 //GLOBALS
 uint32_t note_selected;
+size_t note_selected_size;
 	
 
 //WINDOWS
@@ -63,6 +64,8 @@ ScrollLayer scroll_layer;
 // This is the note itself
 TextLayer text_layer;
 
+#define TEXT_BUFFER_LEN 10000
+char note_view[TEXT_BUFFER_LEN];
 
 ///////////////////////////NOTE WINDOW///////////////////////////
 void up_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
@@ -120,7 +123,7 @@ void note_window_load(Window *me) {
 			"\n###note_window_load: Entering###\n");
 	
 	
-	const GRect max_text_bounds = GRect(0, 0, 144, 2000); // 2000 lines of text
+	const GRect max_text_bounds = GRect(0, 0, 144, 20000); // 2000 pixels of text
 	
 	// Initialize the scroll layer
 	scroll_layer_init(&scroll_layer, 
@@ -138,10 +141,8 @@ void note_window_load(Window *me) {
 	// Initialize the text layer and load text
 	text_layer_init(&text_layer, 
 					max_text_bounds);
-	/*
-	#define TEXT_BUFFER_LEN 20
-	char note_view[TEXT_BUFFER_LEN];
-	char read_buffer[TEXT_BUFFER_LEN];	
+	
+	/*char read_buffer[TEXT_BUFFER_LEN];	
 	resource_load_byte_range(resource_get_handle(note_selected),
 							 0,
 							 (uint8_t*)read_buffer, // Pointer to note char array
@@ -149,19 +150,29 @@ void note_window_load(Window *me) {
 	mini_snprintf(note_view, 
 				  TEXT_BUFFER_LEN, 
 				  "%s", 
-				  read_buffer);
+				  read_buffer);*/
+	//resource_load_byte_range(resource_get_handle(note_selected),
+	//						 0,
+	//						 (uint8_t*)note_view, // Pointer to note char array
+	//						 TEXT_BUFFER_LEN);
+	note_selected_size = resource_load(resource_get_handle(note_selected),
+									   (uint8_t*)note_view,
+									   TEXT_BUFFER_LEN);	
+		
 	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_load: Loaded preview %s###\n", 
-			note_view);
-	*/	
+			"\n###note_window_load: Readed resource bytes: %d ###\n", note_selected_size);
+	
+	
 	//Transform 0x0d 0x0a to 0x20 0x\n
 	//text_transform(note_view);
 	
 	//Set text to the layer
 	text_layer_set_text(&text_layer, 
-						"Julandronooo\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\nJulandrona\n");
-						//note_view);
-		/*
+						note_view);
+		
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###note_window_load: post text_layer_set_text ###\n");
+	
 	// Change the font to a nice readable one
 	text_layer_set_font(&text_layer, 
 						fonts_get_system_font(FONT_TYPE));
@@ -175,7 +186,7 @@ void note_window_load(Window *me) {
     const int vert_scroll_text_padding = 4;
 	scroll_layer_set_content_size(&scroll_layer, 
 								  GSize(144, max_size.h + vert_scroll_text_padding));
-	*/
+	
 	// Add the layers for display
 	scroll_layer_add_child(&scroll_layer, 
 						   &text_layer.layer);
@@ -190,13 +201,9 @@ void note_window_load(Window *me) {
 			"\n###note_window_load: Exiting###\n");
 }
 
-
 void note_window_unload(Window *me) {
 	APP_LOG(APP_LOG_LEVEL_DEBUG, 
 			"\n###note_window_unload: Entering###\n");
-	
-	
-
 	APP_LOG(APP_LOG_LEVEL_DEBUG, 
 			"\n###note_window_unload: Exiting###\n");
 }
@@ -309,11 +316,15 @@ void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *c
 							  TITLE_BUFFER_LEN, 
 							  "Note %d", 
 							  cell_index->row);
+				
 				// Retrieve resource
-				resource_load_byte_range(resource_get_handle(resource_name),
+				resource_load(resource_get_handle(resource_name),
+							  (uint8_t*)read_buffer,
+							  TITLE_BUFFER_LEN);	
+				/*				resource_load_byte_range(resource_get_handle(resource_name),
 										 0,
 										 (uint8_t*)read_buffer,  // Pointer to note char array
-										 TITLE_BUFFER_LEN);
+										 TITLE_BUFFER_LEN);*/
 				// mini_snprintf to add endline character
 				mini_snprintf(note_preview, 
 							  TITLE_BUFFER_LEN, 
