@@ -37,9 +37,9 @@ PBL_APP_INFO(MY_UUID,
 #define SMALL FONT_KEY_GOTHIC_14
 	
 //Config this to fit your needs. 
-// Remember to add the resources and uncomment row_to_resource function lines
+// Remember to add the resources and change NUM_NOTES 
 #define NUM_NOTES 2
-#define FONT_TYPE LARGE
+#define FONT_TYPE MEDIUM
 const int vert_scroll_text_padding = 4;
 #define PIXELS_PER_CLICK 130;
 
@@ -374,7 +374,7 @@ void note_window_load(Window *me) {
 }
 
 
-void note_window_unload(Window *me) {
+/*void note_window_unload(Window *me) {
 	APP_LOG(APP_LOG_LEVEL_DEBUG, 
 			"\n###note_window_unload: Entering###\n");
 	
@@ -383,6 +383,27 @@ void note_window_unload(Window *me) {
 	APP_LOG(APP_LOG_LEVEL_DEBUG, 
 			"\n###note_window_unload: Exiting###\n");
 }
+
+
+void note_window_appear(Window *me) {
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###note_window_appear: Entering###\n");
+	
+    layer_mark_dirty(&me->layer);
+	
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###note_window_appear: Exiting###\n");
+}
+
+
+void note_window_disappear(Window *me) {
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###note_window_disappear: Entering###\n");
+	
+
+	APP_LOG(APP_LOG_LEVEL_DEBUG, 
+			"\n###note_window_disappear: Exiting###\n");
+}*/
 
 
 
@@ -411,7 +432,9 @@ void handle_init(AppContextRef ctx) {
 	window_set_window_handlers(&note_window, 
 							   (WindowHandlers){
 									.load = note_window_load,
-								    .unload = note_window_unload,
+								   // .unload = note_window_unload,
+									//.appear = note_window_appear,
+								    //.disappear = note_window_disappear,
                                }
 							  );
 	//TODO: Es posible que haya que usar los handlers de appear y dissapear
