@@ -3,12 +3,16 @@
  *  Author: <a href="mailto:debuti@gmail.com">Borja Garcia</a>
  * Program: notepad
  * Descrip: Notepad for pebble
- * Version: 0.1.1
+ * Version: 0.1.2
  *    Date: 20131026
  * License: This program doesn't require any license since it's not intended to
  *          be redistributed. In such case, unless stated otherwise, the purpose
  *          of the author is to follow GPLv3.
  * Versions: 
+ *          0.1.2 (20131026)
+ *           - Added auto scroll
+ *           - Added long_click scroll
+ *           - Added multi_click scroll
  *          0.1.1 (20131026)
  *           - Added clock
  *           - Fixed bugs
@@ -16,6 +20,9 @@
  *           - Initial release
  *******************************************************************************
  */
+//TODO:Auto scrolling
+//TODO:Password protected notes
+//TODO:NoteDef struct {Title, Password, Font}
 
 ///////////////////////////INCLUDES///////////////////////////
 #include "pebble_os.h"
@@ -30,7 +37,7 @@
 PBL_APP_INFO(MY_UUID,
              "Notepad", 
              "ganian.tk",
-             1, 0, /* App version */
+             0, 1, /* App version */
              RESOURCE_ID_IMAGE_MENU_ICON,
              APP_INFO_STANDARD_APP);
 
@@ -38,12 +45,19 @@ PBL_APP_INFO(MY_UUID,
 #define LARGE FONT_KEY_GOTHIC_24
 #define MEDIUM FONT_KEY_GOTHIC_18
 #define SMALL FONT_KEY_GOTHIC_14
+#define UP 1
+#define DOWN 2
+#define AUTO 3
 	
 //Config this to fit your needs. 
 // Remember to add the resources and change NUM_NOTES 
 #define NUM_NOTES 3
 #define FONT_TYPE SMALL
 #define PIXELS_PER_CLICK 120
+#define PIXELS_PER_LONG_CLICK 6
+#define LONG_CLICK_DELAY 100
+#define PIXELS_PER_AUTO_SCROLL 3
+#define AUTO_SCROLL_DELAY 100
 #define TEXT_BUFFER_LEN 10000
 #define ALLOW_FAKE_CLOCK 1
 
@@ -53,10 +67,13 @@ PBL_APP_INFO(MY_UUID,
 
 	
 //GLOBALS
+AppContextRef context;
 uint32_t note_selected;
 size_t note_selected_size;
 char note_view[TEXT_BUFFER_LEN];
-
+bool long_click_running = false;
+bool auto_scroll_running = false;
+AppTimerHandle timer_handle;
 
 //WINDOWS
 // This is the main window, shows a list of notes
@@ -80,6 +97,8 @@ char s_time_str_buffer[TIME_STR_BUFFER_BYTES];
 
 
 
+
+///////////////////////////    CODE   ///////////////////////////
 
 ///////////////////////////NOTE WINDOW///////////////////////////
 void up_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
@@ -121,17 +140,65 @@ void down_multi_click_handler(ClickRecognizerRef recognizer, Window *winder) {
 	scroll_layer_set_content_offset	(&scroll_layer,
 									 offset,
 									 true);
-	
 	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###down_multi_click_handler: Exiting###\n");
 }	
 
+void handle_timer(AppContextRef ctx, AppTimerHandle handle, uint32_t cookie) {
+	
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###handle_timer: long_click_running %d###\n", long_click_running);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###handle_timer: auto_scroll_running %d###\n", auto_scroll_running);
+	
+	if (long_click_running) {
+		GPoint offset = scroll_layer_get_content_offset(&scroll_layer);
+		if (cookie == UP) {
+			offset.y = offset.y + PIXELS_PER_LONG_CLICK;
+		}
+		if (cookie == DOWN) {		
+			offset.y = offset.y - PIXELS_PER_LONG_CLICK;
+		}
+	
+		scroll_layer_set_content_offset	(&scroll_layer,
+										 offset,
+										 true);
+		timer_handle = app_timer_send_event(ctx, LONG_CLICK_DELAY /* milliseconds */, cookie);
+	}
+	if (auto_scroll_running) {
+		GPoint offset = scroll_layer_get_content_offset(&scroll_layer);
+		offset.y = offset.y - PIXELS_PER_AUTO_SCROLL;
+		scroll_layer_set_content_offset	(&scroll_layer,
+										 offset,
+										 true);
+		timer_handle = app_timer_send_event(ctx, AUTO_SCROLL_DELAY /* milliseconds */, cookie);
+	}
+}
+
+void up_long_click_handler(ClickRecognizerRef recognizer, Window *window) {
+	long_click_running = true;
+	timer_handle = app_timer_send_event(context, LONG_CLICK_DELAY /* milliseconds */, UP);
+}
+
+void down_long_click_handler(ClickRecognizerRef recognizer, Window *window) {
+	long_click_running = true;
+	timer_handle = app_timer_send_event(context, LONG_CLICK_DELAY /* milliseconds */, DOWN);
+}
+
+void long_click_release_handler(ClickRecognizerRef recognizer, Window *window) {
+	long_click_running = false;
+}
 
 void select_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
-	//Init or pause down scrolling
-
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_single_click_handler: Entering###\n");
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_single_click_handler: Exiting###\n");
-
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_single_click_handler: auto_scroll_running %d###\n", auto_scroll_running);
+	auto_scroll_running = !auto_scroll_running;
+	if (auto_scroll_running) {
+		//window_set_status_bar_icon(&note_window,
+		//							 AUTO );
+		timer_handle = app_timer_send_event(context, 100 /* milliseconds */, AUTO);
+	}
+	else {
+		//window_set_status_bar_icon(&note_window,
+		//							 NORMAL );
+		app_timer_cancel_event(context, timer_handle);
+	}
 }
 
 void select_multi_click_handler(ClickRecognizerRef recognizer, Window *winder) {
@@ -178,21 +245,21 @@ void config_provider(ClickConfig **config, Window *winder)
     config[BUTTON_ID_UP]->click.handler = (ClickHandler)up_single_click_handler;
     config[BUTTON_ID_DOWN]->click.handler = (ClickHandler)down_single_click_handler;
     config[BUTTON_ID_SELECT]->click.handler = (ClickHandler)select_single_click_handler;
-    //config[BUTTON_ID_BACK]->click.handler = (ClickHandler)back_single_click_handler;
+	
 	//TODO: Multiclick select sets a plain clock, to exit that screen Up+Down
-	//TODO: Longpress on up goes to the top, down to the bottom
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###config_provider: Default timeout %d###\n", config[BUTTON_ID_SELECT]->multi_click.timeout);
+	
     config[BUTTON_ID_SELECT]->multi_click.handler = (ClickHandler)select_multi_click_handler;
-	config[BUTTON_ID_SELECT]->multi_click.timeout = 100;
+	config[BUTTON_ID_SELECT]->multi_click.timeout = 500;
     config[BUTTON_ID_UP]->multi_click.handler = (ClickHandler)up_multi_click_handler;
 	config[BUTTON_ID_UP]->multi_click.timeout = 100;
     config[BUTTON_ID_DOWN]->multi_click.handler = (ClickHandler)down_multi_click_handler;
 	config[BUTTON_ID_DOWN]->multi_click.timeout = 100;
-    /*config[BUTTON_ID_BACK]->multi_click.handler = (ClickHandler)back_multi_click_handler;
+	
     config[BUTTON_ID_UP]->long_click.handler = (ClickHandler)up_long_click_handler;
     config[BUTTON_ID_DOWN]->long_click.handler = (ClickHandler)down_long_click_handler;
-    config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler)select_long_click_handler;
-    config[BUTTON_ID_BACK]->long_click.handler = (ClickHandler)back_long_click_handler;*/
+    config[BUTTON_ID_UP]->long_click.release_handler = (ClickHandler)long_click_release_handler;
+    config[BUTTON_ID_DOWN]->long_click.release_handler = (ClickHandler)long_click_release_handler;
+	
 }
 
 
@@ -251,6 +318,9 @@ void note_window_load(Window *me) {
 	layer_add_child(&me->layer, //Root layer of the window
 					&scroll_layer.layer);
 	
+		//window_set_status_bar_icon(&note_window,
+		//							 NORMAL );
+	
     window_set_click_config_provider(&note_window, 
 									 (ClickConfigProvider)config_provider);
 	
@@ -261,6 +331,10 @@ void note_window_unload(Window *me) {
 	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###note_window_unload: Entering###\n");
 	text_layer_set_text(&text_layer,
 						"");
+	text_layer_set_size(&text_layer,
+						GSize(0, 0));
+	text_layer_init(&text_layer, 
+					GRect(0, 0, 0, 0));
 	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###note_window_unload: Exiting###\n");
 }
 
@@ -463,7 +537,7 @@ void main_window_unload(Window *me) {
 
 ///////////////////////////ENTRY POINT///////////////////////////
 void handle_init(AppContextRef ctx) {
-	//(void)ctx;
+	context = ctx;
 	
 	// Load the resources
 	resource_init_current_app(&APP_RESOURCES);
@@ -500,6 +574,7 @@ void pbl_main(void *params) {
 	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###Initializing notepad###\n");
 	PebbleAppHandlers handlers = {
         .init_handler = &handle_init,
+		.timer_handler = &handle_timer,
 		.tick_info = {
 			.tick_handler = &handle_tick,
 			.tick_units = MINUTE_UNIT
