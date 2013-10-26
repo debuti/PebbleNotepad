@@ -3,13 +3,16 @@
  *  Author: <a href="mailto:debuti@gmail.com">Borja Garcia</a>
  * Program: notepad
  * Descrip: Notepad for pebble
- * Version: 0.0.0
- *    Date: 20131024
+ * Version: 0.1.1
+ *    Date: 20131026
  * License: This program doesn't require any license since it's not intended to
  *          be redistributed. In such case, unless stated otherwise, the purpose
  *          of the author is to follow GPLv3.
- * Version: 
- *          0.0.0 (20131024)
+ * Versions: 
+ *          0.1.1 (20131026)
+ *           - Added clock
+ *           - Fixed bugs
+ *          0.1.0 (20131025)
  *           - Initial release
  *******************************************************************************
  */
@@ -40,7 +43,9 @@ PBL_APP_INFO(MY_UUID,
 // Remember to add the resources and change NUM_NOTES 
 #define NUM_NOTES 3
 #define FONT_TYPE SMALL
-#define PIXELS_PER_CLICK 120;
+#define PIXELS_PER_CLICK 120
+#define TEXT_BUFFER_LEN 10000
+#define ALLOW_FAKE_CLOCK 1
 
 //More constants
 #define NUM_MENU_SECTIONS 1
@@ -50,13 +55,15 @@ PBL_APP_INFO(MY_UUID,
 //GLOBALS
 uint32_t note_selected;
 size_t note_selected_size;
-	
+char note_view[TEXT_BUFFER_LEN];
+
 
 //WINDOWS
 // This is the main window, shows a list of notes
 Window main_window;
 // This is a menu layer, you have more control than with a simple menu layer
 MenuLayer menu_layer;
+
 // This is the note window, shows only one note
 Window note_window;
 // This is a scroll layer to handle big texts
@@ -64,12 +71,20 @@ ScrollLayer scroll_layer;
 // This is the note itself
 TextLayer text_layer;
 
-#define TEXT_BUFFER_LEN 10000
-char note_view[TEXT_BUFFER_LEN];
+// This is the fake clock window, to hide the note if necessary hehe
+Window clock_window;
+TextLayer clock_text;
+#define TIME_STR_BUFFER_BYTES 32
+char s_time_str_buffer[TIME_STR_BUFFER_BYTES];
+
+
+
+
 
 ///////////////////////////NOTE WINDOW///////////////////////////
 void up_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
-	GPoint 	offset = scroll_layer_get_content_offset(&scroll_layer);
+	GPoint offset = scroll_layer_get_content_offset(&scroll_layer);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###up_single_click_handler: offset.y %d###\n", offset.y);
 	offset.y = offset.y + PIXELS_PER_CLICK;
 	scroll_layer_set_content_offset	(&scroll_layer,
 									 offset,
@@ -78,7 +93,8 @@ void up_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
 
 
 void down_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
-	GPoint 	offset = scroll_layer_get_content_offset(&scroll_layer);
+	GPoint offset = scroll_layer_get_content_offset(&scroll_layer);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###down_single_click_handler: offset.y %d###\n", offset.y);
 	offset.y = offset.y - PIXELS_PER_CLICK;
 	scroll_layer_set_content_offset	(&scroll_layer,
 									 offset,
@@ -86,14 +102,74 @@ void down_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
 }
 
 
+void up_multi_click_handler(ClickRecognizerRef recognizer, Window *winder) {
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###up_multi_click_handler: Entering###\n");
+	GPoint offset = scroll_layer_get_content_offset(&scroll_layer);
+	offset.y = 0;
+	scroll_layer_set_content_offset	(&scroll_layer,
+									 offset,
+									 true);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###up_multi_click_handler: Exiting###\n");
+}	
+
+
+void down_multi_click_handler(ClickRecognizerRef recognizer, Window *winder) {
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###down_multi_click_handler: Entering###\n");
+	GSize size = scroll_layer_get_content_size(&scroll_layer);
+	GPoint offset = scroll_layer_get_content_offset(&scroll_layer);
+	offset.y = -1 * size.h;
+	scroll_layer_set_content_offset	(&scroll_layer,
+									 offset,
+									 true);
+	
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###down_multi_click_handler: Exiting###\n");
+}	
+
+
 void select_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
 	//Init or pause down scrolling
 
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###select_single_click_handler: Entering###\n");
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###select_single_click_handler: Exiting###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_single_click_handler: Entering###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_single_click_handler: Exiting###\n");
 
+}
+
+void select_multi_click_handler(ClickRecognizerRef recognizer, Window *winder) {
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_multi_click_handler: Entering###\n");
+		
+#if ALLOW_FAKE_CLOCK == 1
+	// Format and push window
+	window_init(&clock_window, 
+				"Digital Watch");
+	window_set_fullscreen(&clock_window,
+						  true);
+	window_stack_push(&clock_window, 
+					  true /* Animated */);
+	
+	// Format text leayer
+	text_layer_init(&clock_text, 
+					GRect(40, 30, 64, 138));
+	text_layer_set_overflow_mode(&clock_text,
+								 GTextOverflowModeWordWrap);
+	text_layer_set_text_alignment(&clock_text, 
+								  GTextAlignmentCenter);
+    text_layer_set_font(&clock_text, 
+						fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+
+	// Fill clock text
+	PblTm now;
+	get_time(&now);
+	string_format_time(s_time_str_buffer, 
+						   TIME_STR_BUFFER_BYTES, 
+						   "%I %M %p", 
+						   &now);
+	text_layer_set_text(&clock_text, 
+						s_time_str_buffer);
+	layer_add_child(&clock_window.layer, 
+					&clock_text.layer);
+#endif
+	
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_multi_click_handler: Exiting###\n");
 }
 
 
@@ -105,11 +181,14 @@ void config_provider(ClickConfig **config, Window *winder)
     //config[BUTTON_ID_BACK]->click.handler = (ClickHandler)back_single_click_handler;
 	//TODO: Multiclick select sets a plain clock, to exit that screen Up+Down
 	//TODO: Longpress on up goes to the top, down to the bottom
-	
-    /*config[BUTTON_ID_UP]->multi_click.handler = (ClickHandler)up_multi_click_handler;
-    config[BUTTON_ID_DOWN]->multi_click.handler = (ClickHandler)down_multi_click_handler;
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###config_provider: Default timeout %d###\n", config[BUTTON_ID_SELECT]->multi_click.timeout);
     config[BUTTON_ID_SELECT]->multi_click.handler = (ClickHandler)select_multi_click_handler;
-    config[BUTTON_ID_BACK]->multi_click.handler = (ClickHandler)back_multi_click_handler;
+	config[BUTTON_ID_SELECT]->multi_click.timeout = 100;
+    config[BUTTON_ID_UP]->multi_click.handler = (ClickHandler)up_multi_click_handler;
+	config[BUTTON_ID_UP]->multi_click.timeout = 100;
+    config[BUTTON_ID_DOWN]->multi_click.handler = (ClickHandler)down_multi_click_handler;
+	config[BUTTON_ID_DOWN]->multi_click.timeout = 100;
+    /*config[BUTTON_ID_BACK]->multi_click.handler = (ClickHandler)back_multi_click_handler;
     config[BUTTON_ID_UP]->long_click.handler = (ClickHandler)up_long_click_handler;
     config[BUTTON_ID_DOWN]->long_click.handler = (ClickHandler)down_long_click_handler;
     config[BUTTON_ID_SELECT]->long_click.handler = (ClickHandler)select_long_click_handler;
@@ -119,21 +198,14 @@ void config_provider(ClickConfig **config, Window *winder)
 
 void note_window_load(Window *me) { 
 	
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_load: Entering###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###note_window_load: Entering###\n");
 	
-	
-	const GRect max_text_bounds = GRect(0, 0, 144, 20000); // 2000 pixels of text
+	const GRect max_text_bounds = GRect(0, 0, 144, 20000); // 20000 pixels of text
 	
 	// Initialize the scroll layer
 	scroll_layer_init(&scroll_layer, 
 					  me->layer.bounds); // Window is 144x168
-	
-	// This binds the scroll layer to the window so that up and down map to scrolling
-	// You may use scroll_layer_set_callbacks to add or override interactivity
-	//scroll_layer_set_click_config_onto_window(&scroll_layer, 
-	//										  me);
-	
+		
 	// Set the initial max size
 	scroll_layer_set_content_size(&scroll_layer, 
 								  max_text_bounds.size);
@@ -142,26 +214,12 @@ void note_window_load(Window *me) {
 	text_layer_init(&text_layer, 
 					max_text_bounds);
 	
-	/*char read_buffer[TEXT_BUFFER_LEN];	
-	resource_load_byte_range(resource_get_handle(note_selected),
-							 0,
-							 (uint8_t*)read_buffer, // Pointer to note char array
-							 TEXT_BUFFER_LEN);
-	mini_snprintf(note_view, 
-				  TEXT_BUFFER_LEN, 
-				  "%s", 
-				  read_buffer);*/
-	//resource_load_byte_range(resource_get_handle(note_selected),
-	//						 0,
-	//						 (uint8_t*)note_view, // Pointer to note char array
-	//						 TEXT_BUFFER_LEN);
+	note_selected_size = resource_size(resource_get_handle(note_selected));
+	if (TEXT_BUFFER_LEN < note_selected_size) note_selected_size = TEXT_BUFFER_LEN;
 	note_selected_size = resource_load(resource_get_handle(note_selected),
 									   (uint8_t*)note_view,
-									   TEXT_BUFFER_LEN);	
-		
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_load: Readed resource bytes: %d ###\n", note_selected_size);
-	
+									   note_selected_size);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###note_window_load: Readed resource bytes: %d ###\n", note_selected_size);
 	
 	//Transform 0x0d 0x0a to 0x20 0x\n
 	//text_transform(note_view);
@@ -170,8 +228,7 @@ void note_window_load(Window *me) {
 	text_layer_set_text(&text_layer, 
 						note_view);
 		
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_load: post text_layer_set_text ###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###note_window_load: post text_layer_set_text ###\n");
 	
 	// Change the font to a nice readable one
 	text_layer_set_font(&text_layer, 
@@ -197,15 +254,14 @@ void note_window_load(Window *me) {
     window_set_click_config_provider(&note_window, 
 									 (ClickConfigProvider)config_provider);
 	
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_load: Exiting###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###note_window_load: Exiting###\n");
 }
 
 void note_window_unload(Window *me) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_unload: Entering###\n");
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###note_window_unload: Exiting###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###note_window_unload: Entering###\n");
+	text_layer_set_text(&text_layer,
+						"");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###note_window_unload: Exiting###\n");
 }
 
 ///////////////////////////MAIN WINDOW///////////////////////////
@@ -290,50 +346,35 @@ void menu_draw_header_callback(GContext* ctx, const Layer *cell_layer, uint16_t 
 	
 // This is the menu item draw callback where you specify what each item should look like
 void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *cell_index, void *data) {
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, 
-	//		  "\n###menu_draw_row_callback: Entering###\n");
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, 
-	//		"\n###menu_draw_row_callback: Section %d, row %d###\n", 
-	//		cell_index->section, 
-	//		cell_index->row);
-	
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###menu_draw_row_callback: Entering###\n");
 	// Determine which section we're going to draw in
 	switch (cell_index->section) {
 	    case 0:
 			if (cell_index->row < NUM_NOTES) {
 				uint32_t resource_name = row_to_resource(cell_index->row);
-				
-				//APP_LOG(APP_LOG_LEVEL_DEBUG, 
-				//		"\n###menu_draw_row_callback: Resource_name %d###\n", 
-				//		resource_name);
-				
+								
 				#define TITLE_BUFFER_LEN 30
 				char note_title[TITLE_BUFFER_LEN];		
 				char note_preview[TITLE_BUFFER_LEN];	
 				char read_buffer[TITLE_BUFFER_LEN];	
 				
-				mini_snprintf(note_title, 
-							  TITLE_BUFFER_LEN, 
-							  "Note %d", 
-							  cell_index->row);
-				
 				// Retrieve resource
 				resource_load(resource_get_handle(resource_name),
 							  (uint8_t*)read_buffer,
 							  TITLE_BUFFER_LEN);	
-				/*				resource_load_byte_range(resource_get_handle(resource_name),
-										 0,
-										 (uint8_t*)read_buffer,  // Pointer to note char array
-										 TITLE_BUFFER_LEN);*/
-				// mini_snprintf to add endline character
+				
+				// mini_snprintf to add endline character to note_preview
 				mini_snprintf(note_preview, 
 							  TITLE_BUFFER_LEN, 
 							  "%s", 
 							  read_buffer);
-				
-				//APP_LOG(APP_LOG_LEVEL_DEBUG, 
-				//		"\n###menu_draw_row_callback: Loaded preview %s###\n", 
-				//		note_preview);
+	
+				// mini_snprintf to add endline character and format to note_title
+				mini_snprintf(note_title, 
+							  TITLE_BUFFER_LEN, 
+							  "Note %d (%d bytes)", 
+							  cell_index->row,
+							  resource_size(resource_get_handle(resource_name)));
 				
 				menu_cell_basic_draw(ctx, 
 									 cell_layer, 
@@ -350,18 +391,15 @@ void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *c
 
 // Here we capture when a user selects a menu item
 void menu_select_callback(MenuLayer *me, MenuIndex *cell_index, void *data) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###menu_select_callback: Entering###\n");
-	APP_LOG(APP_LOG_LEVEL_INFO, 
-			"\n###menu_select_callback: Item selected section %d, row %d###\n", 
-			cell_index->section, 
-			cell_index->row);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###menu_select_callback: Entering###\n");
+	//APP_LOG(APP_LOG_LEVEL_INFO, "\n###menu_select_callback: Item selected section %d, row %d###\n", cell_index->section, cell_index->row);
 	
 	note_selected = row_to_resource(cell_index->row);
 		
 	// Initialize main window but dont push it
 	window_init(&note_window, 
 				"Note");
+	
 	// Setup window handlers
 	window_set_window_handlers(&note_window, 
 							   (WindowHandlers){
@@ -369,21 +407,19 @@ void menu_select_callback(MenuLayer *me, MenuIndex *cell_index, void *data) {
 								    .unload = note_window_unload,
                                }
 							  );
-	//TODO: Es posible que haya que usar los handlers de appear y dissapear
+	
 	//Push!
 	window_stack_push(&note_window, 
 					  true /* Animated */);
 
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###menu_select_callback: Exiting###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###menu_select_callback: Exiting###\n");
 }
 
 
 // This initializes the menu upon main_window load
 void main_window_load(Window *me) {
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###main_window_load: Entering###\n");
 	
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###main_window_load: Entering###\n");
 	// Now we prepare to initialize the menu layer
 	// We need the bounds to specify the menu layer's viewport size
 	// In this case, it'll be the same as the window's
@@ -416,8 +452,7 @@ void main_window_load(Window *me) {
 
 	window_deinit(&note_window);
 			
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###main_window_load: Exiting###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###main_window_load: Exiting###\n");
 }
 
 
@@ -428,6 +463,8 @@ void main_window_unload(Window *me) {
 
 ///////////////////////////ENTRY POINT///////////////////////////
 void handle_init(AppContextRef ctx) {
+	//(void)ctx;
+	
 	// Load the resources
 	resource_init_current_app(&APP_RESOURCES);
 
@@ -436,6 +473,7 @@ void handle_init(AppContextRef ctx) {
 				"Notepad");
 	window_stack_push(&main_window, 
 					  true /* Animated */);
+	
 	// Setup the window handlers
 	window_set_window_handlers(&main_window, 
 							   (WindowHandlers){
@@ -443,16 +481,29 @@ void handle_init(AppContextRef ctx) {
 								    .unload = main_window_unload,
                                }
 							  );
-	
-	
+}
+
+
+void handle_tick(AppContextRef ctx, PebbleTickEvent *event) {
+	// Handle tick only if current window is the clock
+	if (window_stack_get_top_window() == &clock_window) {
+		string_format_time(s_time_str_buffer, 
+						   TIME_STR_BUFFER_BYTES, 
+						   "%I %M %p", 
+						   event->tick_time);
+		text_layer_set_text(&clock_text, s_time_str_buffer);
+	}
 }
 
 
 void pbl_main(void *params) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, 
-			"\n###Initializing notepad###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###Initializing notepad###\n");
 	PebbleAppHandlers handlers = {
-        .init_handler = &handle_init
+        .init_handler = &handle_init,
+		.tick_info = {
+			.tick_handler = &handle_tick,
+			.tick_units = MINUTE_UNIT
+		}
 	};
 	app_event_loop(params, 
 				   &handlers);
