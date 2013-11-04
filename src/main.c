@@ -3,12 +3,14 @@
  *  Author: <a href="mailto:debuti@gmail.com">Borja Garcia</a>
  * Program: notepad
  * Descrip: Notepad for pebble
- * Version: 0.1.2
- *    Date: 20131026
+ * Version: 0.1.3
+ *    Date: 20131104
  * License: This program doesn't require any license since it's not intended to
  *          be redistributed. In such case, unless stated otherwise, the purpose
  *          of the author is to follow GPLv3.
  * Versions: 
+ *          0.1.3 (20131104)
+ *           - Added clock window pop combination
  *          0.1.2 (20131026)
  *           - Added auto scroll
  *           - Added long_click scroll
@@ -20,7 +22,7 @@
  *           - Initial release
  *******************************************************************************
  */
-//TODO:Auto scrolling
+
 //TODO:Password protected notes
 //TODO:NoteDef struct {Title, Password, Font}
 
@@ -93,7 +95,7 @@ Window clock_window;
 TextLayer clock_text;
 #define TIME_STR_BUFFER_BYTES 32
 char s_time_str_buffer[TIME_STR_BUFFER_BYTES];
-
+int state_machine = 0; //UP+DOWN+UP+DOWN+SELECT to exit clock
 
 
 
@@ -101,46 +103,83 @@ char s_time_str_buffer[TIME_STR_BUFFER_BYTES];
 ///////////////////////////    CODE   ///////////////////////////
 
 ///////////////////////////NOTE WINDOW///////////////////////////
-void up_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
+
+#if ALLOW_FAKE_CLOCK == 1
+void up_single_click_clock_window_handler(ClickRecognizerRef recognizer, Window *winder) {
+	switch (state_machine) {
+		case 0: state_machine = 1; break;
+		case 2: state_machine = 3; break;
+		default: state_machine = 0; break;
+	}
+}
+
+void down_single_click_clock_window_handler(ClickRecognizerRef recognizer, Window *winder) {
+	switch (state_machine) {
+		case 1: state_machine = 2; break;
+		case 3: state_machine = 4; break;
+		default: state_machine = 0; break;
+	}
+}
+
+void select_single_click_clock_window_handler(ClickRecognizerRef recognizer, Window *winder) {
+    if (state_machine == 4) {
+	    window_stack_pop(true);
+	}
+	state_machine = 0;
+}
+
+void back_single_click_clock_window_handler(ClickRecognizerRef recognizer, Window *winder) {
+}
+
+void clock_config_provider(ClickConfig **config, Window *winder)
+{
+    config[BUTTON_ID_UP]->click.handler = (ClickHandler)up_single_click_clock_window_handler;
+    config[BUTTON_ID_DOWN]->click.handler = (ClickHandler)down_single_click_clock_window_handler;
+    config[BUTTON_ID_SELECT]->click.handler = (ClickHandler)select_single_click_clock_window_handler;
+    config[BUTTON_ID_BACK]->click.handler = (ClickHandler)back_single_click_clock_window_handler;
+}
+#endif
+
+
+
+///////////////////////////NOTE WINDOW///////////////////////////
+void up_single_click_note_window_handler(ClickRecognizerRef recognizer, Window *winder) {
 	GPoint offset = scroll_layer_get_content_offset(&scroll_layer);
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###up_single_click_handler: offset.y %d###\n", offset.y);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###up_single_click_note_window_handler: offset.y %d###\n", offset.y);
 	offset.y = offset.y + PIXELS_PER_CLICK;
 	scroll_layer_set_content_offset	(&scroll_layer,
 									 offset,
 									 true);
 }
 
-
-void down_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
+void down_single_click_note_window_handler(ClickRecognizerRef recognizer, Window *winder) {
 	GPoint offset = scroll_layer_get_content_offset(&scroll_layer);
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###down_single_click_handler: offset.y %d###\n", offset.y);
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###down_single_click_note_window_handler: offset.y %d###\n", offset.y);
 	offset.y = offset.y - PIXELS_PER_CLICK;
 	scroll_layer_set_content_offset	(&scroll_layer,
 									 offset,
 									 true);
 }
 
-
-void up_multi_click_handler(ClickRecognizerRef recognizer, Window *winder) {
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###up_multi_click_handler: Entering###\n");
+void up_multi_click_note_window_handler(ClickRecognizerRef recognizer, Window *winder) {
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###up_multi_click_note_window_handler: Entering###\n");
 	GPoint offset = scroll_layer_get_content_offset(&scroll_layer);
 	offset.y = 0;
 	scroll_layer_set_content_offset	(&scroll_layer,
 									 offset,
 									 true);
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###up_multi_click_handler: Exiting###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###up_multi_click_note_window_handler: Exiting###\n");
 }	
 
-
-void down_multi_click_handler(ClickRecognizerRef recognizer, Window *winder) {
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###down_multi_click_handler: Entering###\n");
+void down_multi_click_note_window_handler(ClickRecognizerRef recognizer, Window *winder) {
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###down_multi_click_note_window_handler: Entering###\n");
 	GSize size = scroll_layer_get_content_size(&scroll_layer);
 	GPoint offset = scroll_layer_get_content_offset(&scroll_layer);
 	offset.y = -1 * size.h;
 	scroll_layer_set_content_offset	(&scroll_layer,
 									 offset,
 									 true);
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###down_multi_click_handler: Exiting###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###down_multi_click_note_window_handler: Exiting###\n");
 }	
 
 void handle_timer(AppContextRef ctx, AppTimerHandle handle, uint32_t cookie) {
@@ -172,22 +211,22 @@ void handle_timer(AppContextRef ctx, AppTimerHandle handle, uint32_t cookie) {
 	}
 }
 
-void up_long_click_handler(ClickRecognizerRef recognizer, Window *window) {
+void up_long_click_note_window_handler(ClickRecognizerRef recognizer, Window *window) {
 	long_click_running = true;
 	timer_handle = app_timer_send_event(context, LONG_CLICK_DELAY /* milliseconds */, UP);
 }
 
-void down_long_click_handler(ClickRecognizerRef recognizer, Window *window) {
+void down_long_click_note_window_handler(ClickRecognizerRef recognizer, Window *window) {
 	long_click_running = true;
 	timer_handle = app_timer_send_event(context, LONG_CLICK_DELAY /* milliseconds */, DOWN);
 }
 
-void long_click_release_handler(ClickRecognizerRef recognizer, Window *window) {
+void release_long_click_note_window_handler(ClickRecognizerRef recognizer, Window *window) {
 	long_click_running = false;
 }
 
-void select_single_click_handler(ClickRecognizerRef recognizer, Window *winder) {
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_single_click_handler: auto_scroll_running %d###\n", auto_scroll_running);
+void select_single_click_note_window_handler(ClickRecognizerRef recognizer, Window *winder) {
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_single_click_note_window_handler: auto_scroll_running %d###\n", auto_scroll_running);
 	auto_scroll_running = !auto_scroll_running;
 	if (auto_scroll_running) {
 		//window_set_status_bar_icon(&note_window,
@@ -201,8 +240,8 @@ void select_single_click_handler(ClickRecognizerRef recognizer, Window *winder) 
 	}
 }
 
-void select_multi_click_handler(ClickRecognizerRef recognizer, Window *winder) {
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_multi_click_handler: Entering###\n");
+void select_multi_click_note_window_handler(ClickRecognizerRef recognizer, Window *winder) {
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_multi_click_note_window_handler: Entering###\n");
 		
 #if ALLOW_FAKE_CLOCK == 1
 	// Format and push window
@@ -212,6 +251,8 @@ void select_multi_click_handler(ClickRecognizerRef recognizer, Window *winder) {
 						  true);
 	window_stack_push(&clock_window, 
 					  true /* Animated */);
+	
+    clock_window.overrides_back_button = true;
 	
 	// Format text leayer
 	text_layer_init(&clock_text, 
@@ -234,37 +275,35 @@ void select_multi_click_handler(ClickRecognizerRef recognizer, Window *winder) {
 						s_time_str_buffer);
 	layer_add_child(&clock_window.layer, 
 					&clock_text.layer);
+	
+    window_set_click_config_provider(&clock_window, 
+									 (ClickConfigProvider)clock_config_provider);
 #endif
 	
-	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_multi_click_handler: Exiting###\n");
+	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###select_multi_click_note_window_handler: Exiting###\n");
 }
 
-
-void config_provider(ClickConfig **config, Window *winder)
+void note_config_provider(ClickConfig **config, Window *winder)
 {
-    config[BUTTON_ID_UP]->click.handler = (ClickHandler)up_single_click_handler;
-    config[BUTTON_ID_DOWN]->click.handler = (ClickHandler)down_single_click_handler;
-    config[BUTTON_ID_SELECT]->click.handler = (ClickHandler)select_single_click_handler;
+    config[BUTTON_ID_UP]->click.handler = (ClickHandler)up_single_click_note_window_handler;
+    config[BUTTON_ID_DOWN]->click.handler = (ClickHandler)down_single_click_note_window_handler;
+    config[BUTTON_ID_SELECT]->click.handler = (ClickHandler)select_single_click_note_window_handler;
 	
-	//TODO: Multiclick select sets a plain clock, to exit that screen Up+Down
-	
-    config[BUTTON_ID_SELECT]->multi_click.handler = (ClickHandler)select_multi_click_handler;
+    config[BUTTON_ID_SELECT]->multi_click.handler = (ClickHandler)select_multi_click_note_window_handler;
 	config[BUTTON_ID_SELECT]->multi_click.timeout = 500;
-    config[BUTTON_ID_UP]->multi_click.handler = (ClickHandler)up_multi_click_handler;
+    config[BUTTON_ID_UP]->multi_click.handler = (ClickHandler)up_multi_click_note_window_handler;
 	config[BUTTON_ID_UP]->multi_click.timeout = 100;
-    config[BUTTON_ID_DOWN]->multi_click.handler = (ClickHandler)down_multi_click_handler;
+    config[BUTTON_ID_DOWN]->multi_click.handler = (ClickHandler)down_multi_click_note_window_handler;
 	config[BUTTON_ID_DOWN]->multi_click.timeout = 100;
 	
-    config[BUTTON_ID_UP]->long_click.handler = (ClickHandler)up_long_click_handler;
-    config[BUTTON_ID_DOWN]->long_click.handler = (ClickHandler)down_long_click_handler;
-    config[BUTTON_ID_UP]->long_click.release_handler = (ClickHandler)long_click_release_handler;
-    config[BUTTON_ID_DOWN]->long_click.release_handler = (ClickHandler)long_click_release_handler;
+    config[BUTTON_ID_UP]->long_click.handler = (ClickHandler)up_long_click_note_window_handler;
+    config[BUTTON_ID_DOWN]->long_click.handler = (ClickHandler)down_long_click_note_window_handler;
+    config[BUTTON_ID_UP]->long_click.release_handler = (ClickHandler)release_long_click_note_window_handler;
+    config[BUTTON_ID_DOWN]->long_click.release_handler = (ClickHandler)release_long_click_note_window_handler;
 	
 }
 
-
 void note_window_load(Window *me) { 
-	
 	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###note_window_load: Entering###\n");
 	
 	const GRect max_text_bounds = GRect(0, 0, 144, 20000); // 20000 pixels of text
@@ -322,7 +361,7 @@ void note_window_load(Window *me) {
 		//							 NORMAL );
 	
     window_set_click_config_provider(&note_window, 
-									 (ClickConfigProvider)config_provider);
+									 (ClickConfigProvider)note_config_provider);
 	
 	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###note_window_load: Exiting###\n");
 }
@@ -335,8 +374,12 @@ void note_window_unload(Window *me) {
 						GSize(0, 0));
 	text_layer_init(&text_layer, 
 					GRect(0, 0, 0, 0));
+	window_stack_remove(me,
+						true);	
 	//APP_LOG(APP_LOG_LEVEL_DEBUG, "\n###note_window_unload: Exiting###\n");
 }
+
+
 
 ///////////////////////////MAIN WINDOW///////////////////////////
 // This function links numbers with resources
@@ -446,7 +489,7 @@ void menu_draw_row_callback(GContext* ctx, const Layer *cell_layer, MenuIndex *c
 				// mini_snprintf to add endline character and format to note_title
 				mini_snprintf(note_title, 
 							  TITLE_BUFFER_LEN, 
-							  "Note %d (%d bytes)", 
+							  "Note %d (%dB)", 
 							  cell_index->row,
 							  resource_size(resource_get_handle(resource_name)));
 				
@@ -532,6 +575,7 @@ void main_window_load(Window *me) {
 
 void main_window_unload(Window *me) {
 }
+
 
 
 

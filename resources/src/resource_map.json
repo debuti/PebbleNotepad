@@ -1,14 +1,9 @@
 {
     "media": [
         {
-            "defName": "NOTE2",
-            "type": "raw",
-            "file": "data/NOTE2.txt"
-        },
-        {
-            "defName": "NOTE0",
-            "type": "raw",
-            "file": "data/NOTE1.txt"
+            "defName": "IMAGE_MENU_ICON",
+            "type": "png",
+            "file": "images/crayon_mine.png"
         },
         {
             "defName": "NOTE1",
@@ -16,9 +11,14 @@
             "file": "data/periodictabledump.csv"
         },
         {
-            "defName": "IMAGE_MENU_ICON",
-            "type": "png",
-            "file": "images/crayon_mine.png"
+            "defName": "NOTE0",
+            "type": "raw",
+            "file": "data/NOTE1.txt"
+        },
+        {
+            "defName": "NOTE2",
+            "type": "raw",
+            "file": "data/NOTE2.txt"
         }
     ],
     "friendlyVersion": "VERSION",
