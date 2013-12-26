@@ -1,0 +1,35 @@
+{
+    "versionLabel": "1.0",
+    "uuid": "25769431-43a7-4f73-aee5-26ebf5c4c2d3",
+    "appKeys": {},
+    "longName": "pebbleNotepad",
+    "versionCode": 1,
+    "capabilities": [
+        ""
+    ],
+    "shortName": "pebbleNotepad",
+    "companyName": "debuti",
+    "watchapp": {
+        "watchface": false
+    },
+    "resources": {
+        "media": [
+            {
+                "menuIcon": true,
+                "type": "png",
+                "name": "MENU_ICON",
+                "file": "images/crayon_mine.png"
+            },
+            {
+                "type": "raw",
+                "name": "NOTE0",
+                "file": "notes/note0.txt"
+            },
+            {
+                "type": "raw",
+                "name": "NOTE1",
+                "file": "notes/note1.txt"
+            }
+        ]
+    }
+}

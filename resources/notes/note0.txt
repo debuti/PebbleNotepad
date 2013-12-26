@@ -1,0 +1,74 @@
+Hydrogen (H)
+
+Symbol	H
+Atomic Number	1
+Atomic Weight	1.00794
+Group	1 (alkali metals or hydrogen family/lithium family)
+IA (Old IUPAC), IA (CAS)
+Period	1
+Block	s 
+
+ 
+Planetary Bohr Model of H  Lewis Dot Diagram of H
+Physical Properties
+Density	0.0000899 g/cm3
+Atomic Volume	14.1 cm3/mole
+Atomic Radius	2.08 angstroms
+Covalent Radius	37 pm
+Radioactive	No
+
+States
+Melting Point	-259.1 °C
+Boiling Point	-252.9 °C
+Heat Of Fusion	0.05868 kJ/mole
+Heat Of Vaporization	0.4581 kJ/mole
+
+Energy
+Electronegativity	2.2 (Pauling Scale)
+Electron Affinity	-73 kJ/mol
+1st Ionization Energy	1312 kJ/mol
+Specific Heat Capacity	14.304 J g−1 K−1
+Thermal Conductivity	0.1815 W·m−1·K−1
+
+Electrons and Oxidation
+Oxidation States	±1
+Electrons Per Shell	1
+Electron Configuration	1s1
+
+
+Helium (He)
+
+Symbol	He
+Atomic Number	2
+Atomic Weight	4.002602
+Group	18 (noble gases or helium family/neon family)
+VIII (Old IUPAC), VIIIA (CAS)
+Period	1
+Block	s 
+
+ 
+Planetary Bohr Model of He  Lewis Dot Diagram of He
+Physical Properties
+Density	0.0001785 g/cm3
+Atomic Volume	31.8 cm3/mole
+Atomic Radius	 angstroms
+Covalent Radius	32 pm
+Radioactive	No
+
+States
+Melting Point	-272.2 °C
+Boiling Point	-268.9 °C
+Heat Of Fusion	0.021 kJ/mole
+Heat Of Vaporization	0.0845 kJ/mole
+
+Energy
+Electronegativity	 (Pauling Scale)
+Electron Affinity	 kJ/mol
+1st Ionization Energy	2377 kJ/mol
+Specific Heat Capacity	5.193 J g−1 K−1
+Thermal Conductivity	0.152 W·m−1·K−1
+
+Electrons and Oxidation
+Oxidation States	0
+Electrons Per Shell	2
+Electron Configuration	1s2
